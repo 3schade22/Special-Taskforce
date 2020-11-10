@@ -6,6 +6,7 @@ import datetime
 import os
 import win32com.client
 
+
 #"CM T&T Reports"
 
 import smtplib
@@ -49,15 +50,30 @@ def save_attachments(SavePath,folder,subject):
 def prepare_file(path):
     counter = 0
     df = pd.read_csv(path,header=0)
+    #df['Completion Date'] = pd.to_datetime(df['Completion Date'], format='%d%m%Y', errors='ignore')
+
     df['Completion Date'] = pd.to_datetime(df['Completion Date'])
-    for column in df[['Nordea ID']]:
-        columnobject = df[column]
-        print('columnname:',column)
-        print('columncontents', columnobject.values)
-        #print(column)
-        #print(df['Nordea ID'][column])
+
+
+    print(df.dtypes)
+    df = df.sort_values(by=['Nordea ID', 'Title', 'Completion Date'], ascending=[True, True, True])
+
+
+    #df = df.drop_duplicates(subset=['Title', 'Nordea ID'])
+    print(df.count())
+    print(df.head(n=100).to_string())
+
+    for i in df['Completion Date']:
+        print(type(i))
         break
-   # df[['Completion Date','Hour']] = df['Completion Date'].str.split(' ')
+    # for column in df[['Nordea ID']]:
+    #     columnobject = df[column]
+    #     print('columnname:',column)
+    #     print('columncontents', columnobject.values)
+    #     #print(column)
+    #     #print(df['Nordea ID'][column])
+    #     break
+    #df[['Completion Date','Hour']] = df['Completion Date'].str.split(' ')
    #  print(df.head())
    #  print(df.dtypes)
     #x.a.string.split(expand=True)
@@ -94,5 +110,5 @@ if __name__ == '__main__':
     # DestinationFolder = find_folder()#func()
     # File_Path = save_attachments(Path,DestinationFolder,"Background Report Job Email Notification")
     # prepare_file(File_Path)
-    prepare_file("C:/Users/M014205/Desktop/New/Helix report.csv")
+    prepare_file("C:/Users/M014207/Desktop/New/Helix report.csv")
     # print(File_Path)
