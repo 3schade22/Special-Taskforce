@@ -46,6 +46,12 @@ def save_attachments(SavePath,folder,subject):
             break
     return result
 
+def merge_emails():
+    file1 = pd.read_csv("C:/Users/M014207/Desktop/New/Helix report.csv")
+    file2 = pd.read_excel("C:/Users/M014207/Desktop/New/MailList.xlsx")
+
+    file3 = file1[["Title", "Nordea ID", "Last Name", "First Name", "Completion Date"]].merge(file2[["Nordea ID", "Internet_E_mail"]], on= "Nordea ID", how = 'left')
+    file3.to_csv("C:/Users/M014207/Desktop/New/Results.csv", index = False)
 
 def prepare_file(path):
     counter = 0
@@ -59,6 +65,8 @@ def prepare_file(path):
         completed.append(i)
     df['Completion Date'] = completed
     df = df.sort_values(by=['Nordea ID', 'Title', 'Completion Date'], ascending=[True, True, False])
+    df = df.drop_duplicates(subset= ["Nordea ID", "Title"])
+    df = df.sort_values(by=['Completion Date'], ascending=[False])
     print(df.head(n=100).to_string())
     return df
 
@@ -84,14 +92,15 @@ def send_mails():
 
 
 
-
 if __name__ == '__main__':
     # MailList = ["agnieszka.ucinska@nordea.com", 'gabriela.cholewicka@nordea.com', 'krzysztof.sztuk@nordea.com',
     #              'marcin.grabowski@nordea.com']
     # Path = os.path.expanduser("~/Desktop/New")
     # DestinationFolder = find_folder()#func()
     # File_Path = save_attachments(Path,DestinationFolder,"Background Report Job Email Notification")
+    merge_emails()
     # prepare_file(File_Path)
-    # prepare_file("C:/Users/M014205/Desktop/New/Helix report.csv")
+    prepare_file("C:/Users/M014207/Desktop/New/Results.csv")
     # print(File_Path)
-    send_mails()
+    # send_mails()
+
