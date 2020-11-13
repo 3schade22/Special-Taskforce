@@ -2,10 +2,10 @@
 #import django
 import pandas as pd
 #import xlwings as xw
+from datetime import datetime
 import datetime
 import os
 import win32com.client
-
 
 #"CM T&T Reports"
 
@@ -50,37 +50,19 @@ def save_attachments(SavePath,folder,subject):
 def prepare_file(path):
     counter = 0
     df = pd.read_csv(path,header=0)
-    #df['Completion Date'] = pd.to_datetime(df['Completion Date'], format='%d%m%Y', errors='ignore')
-
-    df['Completion Date'] = pd.to_datetime(df['Completion Date'])
-
-
-    print(df.dtypes)
-    df = df.sort_values(by=['Nordea ID', 'Title', 'Completion Date'], ascending=[True, True, True])
-
-
-    #df = df.drop_duplicates(subset=['Title', 'Nordea ID'])
-    print(df.count())
-    print(df.head(n=100).to_string())
-
+    df = df.astype(str)
+    df['Completion Date'] = pd.to_datetime(df['Completion Date'], format='%Y%m%d', errors='ignore')
+    completed = []
     for i in df['Completion Date']:
-        print(type(i))
-        break
-    # for column in df[['Nordea ID']]:
-    #     columnobject = df[column]
-    #     print('columnname:',column)
-    #     print('columncontents', columnobject.values)
-    #     #print(column)
-    #     #print(df['Nordea ID'][column])
-    #     break
-    #df[['Completion Date','Hour']] = df['Completion Date'].str.split(' ')
-   #  print(df.head())
-   #  print(df.dtypes)
-    #x.a.string.split(expand=True)
-    #print(x)
-    # file = xw.Book(path).sheets[0].range("A1").value
-    # print(file)
-    # xw.Book(path).close()
+        i = i[:-4]
+        i = datetime.datetime.strptime(i, '%d/%m/%Y %H:%M')
+        completed.append(i)
+    df['Completion Date'] = completed
+    df = df.sort_values(by=['Nordea ID', 'Title', 'Completion Date'], ascending=[True, True, False])
+    print(df.head(n=100).to_string())
+    return df
+
+
 def send_mails():
     for i in range(1): #len(mail_list)
         body = "Hell Yea!"
@@ -88,7 +70,7 @@ def send_mails():
         email = EmailMessage()
         email.set_content(body, subtype='html')
 
-        to =  'krzysztof.sztuk@nordea.com' #MailList[i]
+        to =  'M014207'#'krzysztof.sztuk@nordea.com' #MailList[i]
         email['From'] = "marcin.grabowski@nordea.com"
         email['To'] = to
         email['Subject'] = "Siemandero"
@@ -110,5 +92,6 @@ if __name__ == '__main__':
     # DestinationFolder = find_folder()#func()
     # File_Path = save_attachments(Path,DestinationFolder,"Background Report Job Email Notification")
     # prepare_file(File_Path)
-    prepare_file("C:/Users/M014207/Desktop/New/Helix report.csv")
+    # prepare_file("C:/Users/M014205/Desktop/New/Helix report.csv")
     # print(File_Path)
+    send_mails()
