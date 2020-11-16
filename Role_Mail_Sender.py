@@ -1,5 +1,4 @@
-#import flask
-#import django
+
 import pandas as pd
 #import xlwings as xw
 from datetime import datetime
@@ -66,29 +65,73 @@ def prepare_file(path):
     df['Completion Date'] = completed
     df = df.sort_values(by=['Nordea ID', 'Title', 'Completion Date'], ascending=[True, True, False])
     df = df.drop_duplicates(subset= ["Nordea ID", "Title"])
-    df = df.sort_values(by=['Completion Date'], ascending=[False])
-    print(df.head(n=100).to_string())
+    df = df.sort_values(by=['Completion Date'], ascending=[True])
+    #print(df.head(n=100).to_string())
     return df
 
 
-def send_mails():
-    for i in range(1): #len(mail_list)
-        body = "Hell Yea!"
 
-        email = EmailMessage()
-        email.set_content(body, subtype='html')
+def send_mails(data):
+    today = datetime.datetime.now()
+    months_4 = today - datetime.timedelta(days=120)
+    months_5 = today - datetime.timedelta(days=150)
+    months_6 = today - datetime.timedelta(days=180)
+    c4 = 0
+    c5 = 0
+    c6 = 0
 
-        to =  'M014207'#'krzysztof.sztuk@nordea.com' #MailList[i]
-        email['From'] = "marcin.grabowski@nordea.com"
-        email['To'] = to
-        email['Subject'] = "Siemandero"
-        email['bcc'] = "marcin.grabowski@nordea.com"
+    for i in data['Completion Date']:
+        # print(type(i))
+        # l = i.timestamp()
+        # print(type(today))
+        # print(type(l))
+        # print(l)
+        # break
 
-        smtp_connection = smtplib.SMTP('email.oneadr.net', 25)
-        status = smtp_connection.send_message(email)
-        print(str(status))
-        print(to)
-    pass
+
+        if i < months_6:
+            c6 += 1
+        elif i < months_5:
+            c5 += 1
+        elif i < months_4:
+            c4 += 1
+    print(c6)
+    print(c5)
+    print(c4)
+    print(c4+c5+c6)
+
+    #     if i.timestamp() +  < today:
+    #         c6 += 1
+    #         print('6 months')
+    #     elif i.timestamp() + datetime.timedelta(150) < today:
+    #         c5 += 1
+    #         print('5 months')
+    #     elif i.timestamp() + datetime.timedelta(120) < today:
+    #         c4 += 1
+    #         print('4 months')
+    #
+    # print(c4)
+    # print(c5)
+    # print(c6)
+
+
+
+    #     body = "Hell Yea!"
+    #
+    #     email = EmailMessage()
+    #     email.set_content(body, subtype='html')
+    #
+    #     to =  'M014207'#'krzysztof.sztuk@nordea.com' #MailList[i]
+    #     email['From'] = "marcin.grabowski@nordea.com"
+    #     email['To'] = to
+    #     email['Subject'] = "Siemandero"
+    #     email['bcc'] = "marcin.grabowski@nordea.com"
+    #
+    #     smtp_connection = smtplib.SMTP('email.oneadr.net', 25)
+    #     #status = smtp_connection.send_message(email)
+    #     print(str(status))
+    #     print(to)
+    # pass
 
 
 
@@ -98,9 +141,9 @@ if __name__ == '__main__':
     # Path = os.path.expanduser("~/Desktop/New")
     # DestinationFolder = find_folder()#func()
     # File_Path = save_attachments(Path,DestinationFolder,"Background Report Job Email Notification")
-    merge_emails()
+    #merge_emails()
     # prepare_file(File_Path)
-    prepare_file("C:/Users/M014207/Desktop/New/Results.csv")
+    data = prepare_file("C:/Users/M014207/Desktop/New/Results.csv")
     # print(File_Path)
-    # send_mails()
+    send_mails(data)
 
