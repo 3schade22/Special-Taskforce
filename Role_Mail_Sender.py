@@ -30,10 +30,11 @@ def find_folder():
 
 
 def save_attachments(SavePath,folder,subject):
+    yesterday = datetime.date.today() - datetime.timedelta(days=1)
     result = ""
     for message in folder:
         print(message.Senton.date())
-        if message.Subject == subject and message.Unread: # or message.Senton.date() == today:
+        if message.Subject == subject and message.Unread and message.Senton.date() == yesterday:
             attachments = message.Attachments
             for attachment in message.Attachments:
                 attachment.SaveAsFile(os.path.join(SavePath, str(attachment)))
@@ -67,6 +68,7 @@ def prepare_file(path):
     df = df.drop_duplicates(subset= ["Nordea ID", "Title"])
     df = df.sort_values(by=['Completion Date'], ascending=[True])
     #print(df.head(n=100).to_string())
+    df.to_csv("C:/Users/M014207/Desktop/New/Ready.csv", index = False)
     return df
 
 
@@ -79,21 +81,29 @@ def send_mails(data):
     c4 = 0
     c5 = 0
     c6 = 0
-
-    for i in data['Completion Date']:
-        # print(type(i))
-        # l = i.timestamp()
-        # print(type(today))
-        # print(type(l))
-        # print(l)
-        # break
+    for i in data.index:
 
 
-        if i < months_6:
-            c6 += 1
-        elif i < months_5:
+        if data['Completion Date'][i] < months_6:
+             email = EmailMessage()
+             body = f"Role: {data['Title'][i]} <br> Mail: {data['Internet_E_mail'][i]} <br> First Name: {data['First Name'][i]} <br> Last Name: {data['Last Name'][i]} <br> Date: {data['Completion Date'][i]}"
+             email.set_content(body, subtype='html')
+
+             to =  'marcin.grabowski@nordea.com'
+             email['From'] = "krzysztof.sztuk@nordea.com"
+             email['To'] = to
+             email['Subject'] = "Siemandero"
+             email['bcc'] = "krzysztof.sztuk@nordea.com"
+
+             smtp_connection = smtplib.SMTP('email.oneadr.net', 25)
+             status = smtp_connection.send_message(email)
+             print(str(status))
+             c6 +=1
+             break
+        #     print(to)
+        elif data['Completion Date'][i] < months_5:
             c5 += 1
-        elif i < months_4:
+        elif data['Completion Date'][i] < months_4:
             c4 += 1
     print(c6)
     print(c5)
@@ -138,12 +148,12 @@ def send_mails(data):
 if __name__ == '__main__':
     # MailList = ["agnieszka.ucinska@nordea.com", 'gabriela.cholewicka@nordea.com', 'krzysztof.sztuk@nordea.com',
     #              'marcin.grabowski@nordea.com']
-    # Path = os.path.expanduser("~/Desktop/New")
-    # DestinationFolder = find_folder()#func()
-    # File_Path = save_attachments(Path,DestinationFolder,"Background Report Job Email Notification")
+    #Path = os.path.expanduser("~/Desktop/New")
+    #DestinationFolder = find_folder()#func()
+    #File_Path = save_attachments(Path,DestinationFolder,"Background Report Job Email Notification")
     #merge_emails()
-    # prepare_file(File_Path)
+    #prepare_file(File_Path)
     data = prepare_file("C:/Users/M014207/Desktop/New/Results.csv")
-    # print(File_Path)
+    #print(File_Path)
     send_mails(data)
 
