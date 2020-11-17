@@ -72,6 +72,21 @@ def prepare_file(path):
     return df
 
 
+def prepare_mail_body(i, period):
+    email = EmailMessage()
+    body = f"This is a message for period {period} <br> Role: {data['Title'][i]} <br> Mail: {data['Internet_E_mail'][i]} <br> First Name: {data['First Name'][i]} <br> Last Name: {data['Last Name'][i]} <br> Date: {data['Completion Date'][i]}<br>"
+    email.set_content(body, subtype='html')
+
+    to = 'marcin.grabowski@nordea.com'
+    email['From'] = "krzysztof.sztuk@nordea.com"
+    email['To'] = to
+    email['Subject'] = "Siemandero"
+    email['bcc'] = "krzysztof.sztuk@nordea.com"
+
+    smtp_connection = smtplib.SMTP('email.oneadr.net', 25)
+    status = smtp_connection.send_message(email)
+    print(str(status))
+
 
 def send_mails(data):
     today = datetime.datetime.now()
@@ -81,34 +96,21 @@ def send_mails(data):
     c4 = 0
     c5 = 0
     c6 = 0
+
     for i in data.index:
 
 
         if data['Completion Date'][i] < months_6:
-             email = EmailMessage()
-             body = f"Role: {data['Title'][i]} <br> Mail: {data['Internet_E_mail'][i]} <br> First Name: {data['First Name'][i]} <br> Last Name: {data['Last Name'][i]} <br> Date: {data['Completion Date'][i]}"
-             email.set_content(body, subtype='html')
+            prepare_mail_body(i, "6 months")
+            break
 
-             to =  'marcin.grabowski@nordea.com'
-             email['From'] = "krzysztof.sztuk@nordea.com"
-             email['To'] = to
-             email['Subject'] = "Siemandero"
-             email['bcc'] = "krzysztof.sztuk@nordea.com"
-
-             smtp_connection = smtplib.SMTP('email.oneadr.net', 25)
-             status = smtp_connection.send_message(email)
-             print(str(status))
-             c6 +=1
-             break
-        #     print(to)
         elif data['Completion Date'][i] < months_5:
-            c5 += 1
+            prepare_mail_body(i, "5 months")
+            break
         elif data['Completion Date'][i] < months_4:
-            c4 += 1
-    print(c6)
-    print(c5)
-    print(c4)
-    print(c4+c5+c6)
+            prepare_mail_body(i, "4 months")
+            break
+
 
     #     if i.timestamp() +  < today:
     #         c6 += 1
@@ -127,21 +129,22 @@ def send_mails(data):
 
 
     #     body = "Hell Yea!"
+
+    # print(body)
     #
-    #     email = EmailMessage()
-    #     email.set_content(body, subtype='html')
+    # email = EmailMessage()
+    # email.set_content(body, subtype='html')
     #
-    #     to =  'M014207'#'krzysztof.sztuk@nordea.com' #MailList[i]
-    #     email['From'] = "marcin.grabowski@nordea.com"
-    #     email['To'] = to
-    #     email['Subject'] = "Siemandero"
-    #     email['bcc'] = "marcin.grabowski@nordea.com"
+    # to =  'marcin.grabowski@nordea.com'#'krzysztof.sztuk@nordea.com' #MailList[i]
+    # email['From'] = "krzysztof.sztuk@nordea.com"
+    # email['To'] = to
+    # email['Subject'] = "Siemandero"
+    # email['bcc'] = "krzysztof.sztuk@nordea.com"
     #
-    #     smtp_connection = smtplib.SMTP('email.oneadr.net', 25)
-    #     #status = smtp_connection.send_message(email)
-    #     print(str(status))
-    #     print(to)
-    # pass
+    # smtp_connection = smtplib.SMTP('email.oneadr.net', 25)
+    # status = smtp_connection.send_message(email)
+    # print(str(status))
+        #print(to)
 
 
 
