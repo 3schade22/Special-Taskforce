@@ -5,13 +5,17 @@ import datetime
 import os
 import win32com.client
 
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
+from email.mime.text import MIMEText
+
 # "CM T&T Reports"
 
 import smtplib
 from email.message import EmailMessage
 
 
-
+# Find Outlook folder, where the report is
 def find_folder():
     today = datetime.date.today()
 
@@ -28,36 +32,42 @@ def find_folder():
     # messages = messages.Sort( "[ReceivedTime]" , True )
 
 
+# Save the most current report
 def save_attachments(SavePath, folder, subject):
     yesterday = datetime.date.today() - datetime.timedelta(days=1)
-    result = ""
+    file_path = ""
     for message in folder:
         print(message.Senton.date())
         if message.Subject == subject and message.Unread and message.Senton.date() == yesterday:
             attachments = message.Attachments
             for attachment in message.Attachments:
                 attachment.SaveAsFile(os.path.join(SavePath, str(attachment)))
-                result = str(SavePath + "/" + str(attachment))
+                file_path = str(SavePath + "/" + str(attachment))
                 # if message.Subject == subject and message.Unread:
                 #    message.Unread = False
                 break
 
             break
-    return result
+    return file_path
 
 
-def merge_emails():
-    file1 = pd.read_csv("C:/Users/M014207/Desktop/New/Helix report.csv")
-    file2 = pd.read_excel("C:/Users/M014207/Desktop/New/MailList.xlsx")
+# add mail addresses to the report
+def merge_emails(file1):
+    file1 = pd.read_csv("C:/Users/Public/Documents/HelixRoles/Helix report.csv")
+    file2 = pd.read_excel("C:/Users/Public/Documents/HelixRoles/MailList.xlsx")
 
     file3 = file1[["Title", "Nordea ID", "Last Name", "First Name", "Completion Date"]].merge(
         file2[["Nordea ID", "Internet_E_mail"]], on="Nordea ID", how='left')
-    file3.to_csv("C:/Users/M014207/Desktop/New/Results.csv", index=False)
+    file3.to_csv("C:/Users/Public/Documents/HelixRoles/Results.csv", index=False)
+    file_path = "C:/Users/Public/Documents/HelixRoles/Results.csv"
+
+    return file_path
 
 
-def prepare_file(path):
+# prepare data for the send out
+def prepare_file(file_path):
     counter = 0
-    df = pd.read_csv(path, header=0)
+    df = pd.read_csv(file_path, header=0)
     df = df.astype(str)
     df['Completion Date'] = pd.to_datetime(df['Completion Date'], format='%Y%m%d', errors='ignore')
     completed = []
@@ -70,13 +80,62 @@ def prepare_file(path):
     df = df.drop_duplicates(subset=["Nordea ID", "Title"])
     df = df.sort_values(by=['Completion Date'], ascending=[False])
     # print(df.head(n=100).to_string())
-    df.to_csv("C:/Users/M014207/Desktop/New/Ready.csv", index=False)
+    df.to_csv("C:/Users/Public/Documents/HelixRoles/Ready.csv", index=False)
     return df
+
+
+# choose the correct mail template and trigger email send out
+def choose_mail_type(data):
+    today = datetime.datetime.now()
+    months_4 = today - datetime.timedelta(days=120)
+    months_5 = today - datetime.timedelta(days=150)
+    months_6 = today - datetime.timedelta(days=180)
+
+    c = 0
+    c4 = 0
+    c5 = 0
+    c6 = 0
+
+    for i in data.index:
+        c += 1
+
+        if data['Title'][i] == "Helix Release Manager/Coordinator":
+            continue
+
+        if data['Completion Date'][i] < months_6:
+            prepare_mail_body(i, "6 months")
+            testing_list1.append(data['Title'][i])
+            testing_list2.append(data['Internet_E_mail'][i])
+            testing_list3.append(data['Completion Date'][i])
+            testing_list4.append(6)
+            c6 += 1
+            #break
+
+        elif data['Completion Date'][i] < months_5:
+            prepare_mail_body(i, "5 months")
+            testing_list1.append(data['Title'][i])
+            testing_list2.append(data['Internet_E_mail'][i])
+            testing_list3.append(data['Completion Date'][i])
+            testing_list4.append(5)
+            c5 += 1
+            #break
+
+        elif data['Completion Date'][i] < months_4:
+            prepare_mail_body(i, "4 months")
+            testing_list1.append(data['Title'][i])
+            testing_list2.append(data['Internet_E_mail'][i])
+            testing_list3.append(data['Completion Date'][i])
+            testing_list4.append(4)
+            c4 += 1
+           # break
+
+    print(c)
+    testing_dataFrame()
+    return c4, c5, c6
 
 
 def prepare_mail_body(i, period):
     email = EmailMessage()
-    link = ""
     print(data['Title'][i])
     if data['Title'][i] == "Helix Change Manager":
         link = "https://wiki.itgit.oneadr.net/display/ServMan/How+to+become+a+Change+Manager"
@@ -105,15 +164,11 @@ def prepare_mail_body(i, period):
                 f"If the training is not repeated, the role will be revoked.<br><br><br> Kind Regards,<br>" \
                 f"IT Change Management Team"
         email['Subject'] = f"{data['Title'][i]} role revoked. Recertification required."
-
     # rola, period
     email.set_content(body2, subtype='html')
-
-
     if len(data['Internet_E_mail'][i] ) < 4:
         missing_mails.append((data["Nordea ID"][i], data['Title'][i]))
         pass
-
 
 
     # to = 'marcin.grabowski@nordea.com' #data['Internet_E_mail'][i]
@@ -126,26 +181,38 @@ def prepare_mail_body(i, period):
     # status = smtp_connection.send_message(email)
     # print(str(status))
 
-def send_missing_emails():
 
-    email = EmailMessage()
+def send_missing_emails(counters):
+
+    email = MIMEMultipart()
     if missing_mails != []:
-        body = str(missing_mails)
+        body = 'The list of messages that were not sent:' + str(missing_mails)
 
     else:
-        body = "No missing emails found"
+        body = "All messages sent successfully. No missing emails found"
 
-    email.set_content(body, subtype='html')
-    #email.add_attachment(attachment)
-    to = "krzysztof.sztuk@nordea.com" #"change.tickets@nordea.com"
+    body = body + f'''\n
+    Number of emails sent regarding trainings done 4 months ago: {counters[0]}
+    Number of emails sent regarding trainings done 5 months ago: {counters[1]}
+    Number of emails sent regarding trainings done 6 months ago: {counters[2]}
+    
+    
+    Number of emails sent today: {counters[0]+counters[1]+counters[2]}'''
+    body = MIMEText(body, 'plain')
+    email.attach(body)     #set_content(body, subtype='html')
+    with open('C:/Users/Public/Documents/HelixRoles/Sendout_Info.csv', 'rb') as file:
+    # Attach the file with filename to the email
+        email.attach(MIMEApplication(file.read(), Name="Sendout Info.csv"))
+    to = "marcin.grabowski@nordea.com" #"change.tickets@nordea.com"
 
-    email['From'] = "krzysztof.sztuk@nordea.com"
+    email['From'] = "marcin.grabowski@nordea.com"
     email['To'] = to
-    email['bcc'] = "marcin.grabowski@nordea.com"
+    email['bcc'] = "krzysztof.sztuk@nordea.com"
 
     smtp_connection = smtplib.SMTP('email.oneadr.net', 25)
     status = smtp_connection.send_message(email)
     print(str(status))
+
 
 def testing_dataFrame():
     people = {
@@ -162,53 +229,8 @@ def testing_dataFrame():
 
     test_frame = pd.DataFrame(data=people)
     #print(test_frame.head(n=100).to_string())
-    test_frame.to_csv("C:/Users/M014207/Desktop/New/Sendout_Info.csv", index=False)
+    test_frame.to_csv("C:/Users/Public/Documents/HelixRoles/Sendout_Info.csv", index=False)
     # return test_attachment
-
-
-def send_mails(data):
-    today = datetime.datetime.now()
-    months_4 = today - datetime.timedelta(days=120)
-    months_5 = today - datetime.timedelta(days=150)
-    months_6 = today - datetime.timedelta(days=180)
-
-    c = 0
-    for i in data.index:
-        c += 1
-
-        if data['Title'][i] == "Helix Release Manager/Coordinator":
-            continue
-
-        if data['Completion Date'][i] < months_6:
-            prepare_mail_body(i, "6 months")
-            testing_list1.append(data['Title'][i])
-            testing_list2.append(data['Internet_E_mail'][i])
-            testing_list3.append(data['Completion Date'][i])
-            testing_list4.append(6)
-            #break
-
-        elif data['Completion Date'][i] < months_5:
-            prepare_mail_body(i, "5 months")
-            testing_list1.append(data['Title'][i])
-            testing_list2.append(data['Internet_E_mail'][i])
-            testing_list3.append(data['Completion Date'][i])
-            testing_list4.append(5)
-            #break
-
-        elif data['Completion Date'][i] < months_4:
-            prepare_mail_body(i, "4 months")
-            testing_list1.append(data['Title'][i])
-            testing_list2.append(data['Internet_E_mail'][i])
-            testing_list3.append(data['Completion Date'][i])
-            testing_list4.append(4)
-           # break
-
-    print(c)
-    # return testing_dataFrame()
-
-
-
-
 
 
 if __name__ == '__main__':
@@ -218,13 +240,13 @@ if __name__ == '__main__':
     testing_list3 = []
     testing_list4 = []
 
-    # Path = os.path.expanduser("~/Desktop/New")
+    # Path = os.path.expanduser("C:/Users/Public/Documents/HelixRoles")
     # DestinationFolder = find_folder()#func()
-    # File_Path = save_attachments(Path,DestinationFolder,"Background Report Job Email Notification")
-    # merge_emails()
-    # prepare_file(File_Path)
-    data = prepare_file("C:/Users/M014207/Desktop/New/Results.csv")
+    # File_Path = save_attachments(Path, DestinationFolder, "Background Report Job Email Notification")
+    # File_Path = merge_emails(File_Path)
+    # data = prepare_file(File_Path)
+    data = prepare_file("C:/Users/Public/Documents/HelixRoles/Results.csv")
     # print(File_Path)
-    send_mails(data)
-    #attachment = "C:/Users/M014207/Desktop/New/Sendout_Info.csv"
-    send_missing_emails()
+    counters = choose_mail_type(data)
+    # attachment = "C:/Users/M014207/Desktop/New/Sendout_Info.csv"
+    send_missing_emails(counters)
