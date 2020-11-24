@@ -92,6 +92,10 @@ def choose_mail_type(data):
     months_6 = today - datetime.timedelta(days=180)
 
     c = 0
+    c4 = 0
+    c5 = 0
+    c6 = 0
+
     for i in data.index:
         c += 1
 
@@ -104,6 +108,7 @@ def choose_mail_type(data):
             testing_list2.append(data['Internet_E_mail'][i])
             testing_list3.append(data['Completion Date'][i])
             testing_list4.append(6)
+            c6 += 1
             #break
 
         elif data['Completion Date'][i] < months_5:
@@ -112,6 +117,7 @@ def choose_mail_type(data):
             testing_list2.append(data['Internet_E_mail'][i])
             testing_list3.append(data['Completion Date'][i])
             testing_list4.append(5)
+            c5 += 1
             #break
 
         elif data['Completion Date'][i] < months_4:
@@ -120,10 +126,12 @@ def choose_mail_type(data):
             testing_list2.append(data['Internet_E_mail'][i])
             testing_list3.append(data['Completion Date'][i])
             testing_list4.append(4)
+            c4 += 1
            # break
 
     print(c)
     testing_dataFrame()
+    return c4, c5, c6
 
 
 def prepare_mail_body(i, period):
@@ -174,29 +182,27 @@ def prepare_mail_body(i, period):
     # print(str(status))
 
 
-def send_missing_emails():
+def send_missing_emails(counters):
 
     email = MIMEMultipart()
     if missing_mails != []:
-        body = str(missing_mails)
+        body = 'The list of messages that were not sent:' + str(missing_mails)
 
     else:
-        body = "No missing emails found"
+        body = "All messages sent successfully. No missing emails found"
 
+    body = body + f'''\n
+    Number of emails sent regarding trainings done 4 months ago: {counters[0]}
+    Number of emails sent regarding trainings done 5 months ago: {counters[1]}
+    Number of emails sent regarding trainings done 6 months ago: {counters[2]}
+    
+    
+    Number of emails sent today: {counters[0]+counters[1]+counters[2]}'''
     body = MIMEText(body, 'plain')
     email.attach(body)     #set_content(body, subtype='html')
-    with open('C:/Users/Public/Documents/HelixRoles/Sendout_Info.csv','rb') as file:
+    with open('C:/Users/Public/Documents/HelixRoles/Sendout_Info.csv', 'rb') as file:
     # Attach the file with filename to the email
         email.attach(MIMEApplication(file.read(), Name="Sendout Info.csv"))
-    # attach_file_name = 'C:/Users/Public/Documents/HelixRoles/Sendout_Info.csv'
-    # attach_file = open(attach_file_name, 'rb')  # Open the file as binary mode
-    # payload = MIMEBase('application', 'octate-stream')
-    # payload.set_payload((attach_file).read())
-    # encoders.encode_base64(payload)  # encode the attachment
-    # add payload header with filename
-    # payload.add_header('Content-Decomposition', 'attachment', filename=attach_file_name)
-    # email.attach(payload)
-    #email.add_attachment(attachment)
     to = "marcin.grabowski@nordea.com" #"change.tickets@nordea.com"
 
     email['From'] = "marcin.grabowski@nordea.com"
@@ -241,6 +247,6 @@ if __name__ == '__main__':
     # data = prepare_file(File_Path)
     data = prepare_file("C:/Users/Public/Documents/HelixRoles/Results.csv")
     # print(File_Path)
-    choose_mail_type(data)
+    counters = choose_mail_type(data)
     # attachment = "C:/Users/M014207/Desktop/New/Sendout_Info.csv"
-    send_missing_emails()
+    send_missing_emails(counters)
